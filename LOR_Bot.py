@@ -42,7 +42,6 @@ def hold(pos, y=None):
         x = pos
     else:
         (x, y) = pos
-
     win32api.SetCursorPos((x, y))
     time.sleep(0.1)
     win32api.mouse_event(win32con.MOUSEEVENTF_LEFTDOWN, x, y, 0, 0)
@@ -133,26 +132,16 @@ def get_game_state(board_state) -> str:
 
     if len(board_state["opponent_cards_attk"]):
         return "Blocking"
-    
+
     # Check if its our turn
-    turn_btn_sub_img = np.array(image.crop(box=(1620, 480, 1680, 600)))
+    turn_btn_sub_img = np.array(image.crop(box=(int(window_width * 0.77), int(window_height *
+                                0.42), int(window_width * 0.93), int(window_height * 0.58))))
     hsv = cv2.cvtColor(turn_btn_sub_img, cv2.COLOR_BGR2HSV)
     mask = cv2.inRange(hsv, (5, 200, 200), (15, 255, 255))  # Blue color space
     target = cv2.cvtColor(cv2.bitwise_and(turn_btn_sub_img, turn_btn_sub_img, mask=mask), cv2.COLOR_BGR2GRAY)
     cv2.imshow("BLUE turn button end check", target)
-    if cv2.countNonZero(target) < 8:  # End turn button is GRAY
+    if cv2.countNonZero(target) < 100:  # End turn button is GRAY
         return "Opponent_Turn"
-
-    # TODO: Use this variable
-    # turn_btn_sub_img = np.array(image.crop(box=(int(window_width * 0.77), int(window_height *
-    #                             0.42), int(window_width * 0.93), int(window_height * 0.58))))
-    # hsv = cv2.cvtColor(turn_btn_sub_img, cv2.COLOR_BGR2HSV)
-    # mask = cv2.inRange(hsv, (5, 200, 200), (15, 255, 255))  # Blue color space
-    # target = cv2.cvtColor(cv2.bitwise_and(turn_btn_sub_img, turn_btn_sub_img, mask=mask), cv2.COLOR_BGR2GRAY)
-    # cv2.imshow("BLUE turn button end check", target)
-    # if cv2.countNonZero(target) < 100:  # End turn button is GRAY
-    #     return "Opponent_Turn"
-
 
     # Check if local_player has the attack token
     attack_token_bound_l_x = int(window_width * attack_token_bounds[0][0])
@@ -179,7 +168,7 @@ def get_game_state(board_state) -> str:
 def get_mana():
     mana_vals = []
     for image in frames:
-        mana_number = np.array(image.crop(box=(1585, 638, 1635, 675))) # TODO: Fix hardcoded values
+        mana_number = np.array(image.crop(box=(1585, 638, 1635, 675)))
         mana_number = cv2.cvtColor(mana_number, cv2.COLOR_BGR2GRAY)
         mana_edges = cv2.Canny(mana_number, 100, 100)
 
@@ -322,7 +311,9 @@ GAME_RESULT_LINK = "http://127.0.0.1:21337/game-result"
 MANA_MASKS = [masks.ZERO, masks.ONE, masks.TWO, masks.THREE, masks.FOUR,
               masks.FIVE, masks.SIX, masks.SEVEN, masks.EIGHT, masks.NINE, masks.TEN]
 
-# NOTE Mana discounts, Buffs, Debuffs are NOT accounted for!
+# NOTE Mana discounts, Buffs, Debuffs are NOT accounted for (static decklist)!
+# NOTE Values for mana checking are hardcoded, only works fullscreen (1920x1080)!
+
 
 # MAIN
 win32gui.EnumWindows(window_callback, window_info)
@@ -334,12 +325,11 @@ game_id = int(json.loads(urllib.request.urlopen(GAME_RESULT_LINK).read().decode(
 prev_game_id = game_id
 
 while (True):
-    # TODO: Make a separate thread just for JSON requests!
     game_result = json.loads(urllib.request.urlopen(GAME_RESULT_LINK).read().decode())
     game_id = int(game_result["GameID"])
     if game_id > prev_game_id:  # Game is finished
         print("Game ended... waiting for animations")
-        time.sleep(15)
+        time.sleep(20)
 
         continue_and_replay()
 
@@ -355,14 +345,13 @@ while (True):
     game_data = json.loads(game_url.read().decode())
     # print(game_data)
 
-    # Window Handle + game_data info
-    window_x, window_y, window_width, window_height = (window_info[0], window_info[1], game_data["Screen"]
-                                                       ["ScreenWidth"], game_data["Screen"]["ScreenHeight"])
+    # # Window Handle + game_data info # NOTE Deprecated
+    # window_x, window_y, window_width, window_height = (window_info[0], window_info[1], game_data["Screen"]
+    #                                                    ["ScreenWidth"], game_data["Screen"]["ScreenHeight"])
 
-    # TODO: Use this data
-    # # Window Handle info
-    # window_x, window_y, window_width, window_height = window_info[0], window_info[1], window_info[2] - \
-    #     window_info[0], window_info[3] - window_info[1]
+    # Window Handle info
+    window_x, window_y, window_width, window_height = window_info[0], window_info[1], window_info[2] - \
+        window_info[0], window_info[3] - window_info[1]
 
     frames = [ImageGrab.grab(bbox=(window_x, window_y, window_x + window_width, window_y +
                              window_height), all_screens=True) for _ in range(4)]
@@ -382,7 +371,7 @@ while (True):
         time.sleep(5)
         prev_game_state = game_state
         continue
-    if game_state == "Mulligan" and prev_game_state == "Menus": # Double-check so we don't get False Positives!
+    if game_state == "Mulligan" and prev_game_state == "Menus":  # Double-check so we don't get False Positives!
         print("Thinking...")
         time.sleep(7)
         prev_game_state = game_state
