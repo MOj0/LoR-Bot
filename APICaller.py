@@ -2,8 +2,6 @@ import urllib.request
 import json
 from time import sleep
 
-# items = json.load
-
 class APICaller:
     def __init__(self):
         self.game_data_link = "http://127.0.0.1:21337/positional-rectangles"

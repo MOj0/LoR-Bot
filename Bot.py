@@ -46,8 +46,8 @@ class Bot:
         self.first_pass_blocking = False
         self.deck_type = ""  # Ephemeral, Aggro
         self.block_counter = 0
-        self.game_id = -1
-        self.prev_game_id = -1
+        self.game_id = -2
+        self.prev_game_id = -2
 
 
     def _update_window_info(self, handle, window_info):
@@ -315,7 +315,7 @@ class Bot:
             if not self.first_pass_blocking:
                 self.first_pass_blocking = True
                 print("first blocking pass...")
-                sleep(3)
+                sleep(5)
                 return
 
             for i, blocking_card in enumerate(self.board_state["cards_board"]):
@@ -454,6 +454,6 @@ class Bot:
         if not game_result:
             return
         self.game_result = game_result
-        if self.game_id == -1 and self.prev_game_id == -1:
+        if self.game_id == -2 and self.prev_game_id == -2:
             self.game_id = int(game_result["GameID"])
             self.prev_game_id = self.game_id
