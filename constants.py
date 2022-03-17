@@ -1,4 +1,17 @@
 import numpy as np
+import os
+import json
+from Card import Card
+
+# Parse all cards from all sets
+(_, _, card_set_files) = next(os.walk("card_sets"))
+cards_data = []
+for card_set in card_set_files:
+    cards_data += json.load(open("card_sets/"+card_set, encoding="utf8"))
+
+ALL_CARDS = {card["cardCode"]: Card(card["name"], card["cost"], card["attack"],
+                                            card["health"], card["type"], card["keywords"]) for card in cards_data}
+
 
 ZERO = [np.array([False,   False,   False,   False,   False,   False,   False,   False,   False,   False,   False,   False,   False,
                   False,   False,   False,   False,   False,   False,   False,   False,   False,   False,   False,   False,   False,

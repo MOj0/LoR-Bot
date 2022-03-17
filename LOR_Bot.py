@@ -1,4 +1,4 @@
-import masks
+import constants
 import numpy as np
 import cv2
 from PIL import ImageGrab
@@ -308,8 +308,8 @@ GAME_DATA_LINK = "http://127.0.0.1:21337/positional-rectangles"
 DECK_LINK = "http://127.0.0.1:21337/static-decklist"
 GAME_RESULT_LINK = "http://127.0.0.1:21337/game-result"
 
-MANA_MASKS = [masks.ZERO, masks.ONE, masks.TWO, masks.THREE, masks.FOUR,
-              masks.FIVE, masks.SIX, masks.SEVEN, masks.EIGHT, masks.NINE, masks.TEN]
+MANA_MASKS = [constants.ZERO, constants.ONE, constants.TWO, constants.THREE, constants.FOUR,
+              constants.FIVE, constants.SIX, constants.SEVEN, constants.EIGHT, constants.NINE, constants.TEN]
 
 # NOTE Mana discounts, Buffs, Debuffs are NOT accounted for (static decklist)!
 # NOTE Values for mana checking are hardcoded, only works fullscreen (1920x1080)!
