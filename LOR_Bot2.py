@@ -18,16 +18,14 @@ bot_thread = threading.Thread(target=bot.run)
 bot_thread.daemon = True
 bot_thread.start()
 
+if bot.get_window_info()[:2] == (-1, -1):  # Only check if x and y coords are -1
+    print(colored("Legends of Runeterra isn't running!", "red"))
+    exit(1)
+
 api_caller = APICaller()
 api_thread = threading.Thread(target=api_caller.call_api)
 api_thread.daemon = True
 api_thread.start()
-
-sleep(0.1)  # Necessary if we want to call get_window_info
-
-if bot.get_window_info()[:2] == [-1, -1]:  # Only check if x and y coords are -1
-    print(colored("Legends of Runeterra isn't running!", "red"))
-    exit(1)
 
 while True:
     state_machine.set_game_data(api_caller.get_game_data())

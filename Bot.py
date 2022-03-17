@@ -21,8 +21,8 @@ class Bot:
         self.state_machine = state_machine
         self.is_vs_ai = is_vs_ai
         self.font = cv2.FONT_HERSHEY_SIMPLEX
-        self.window_x = 0
-        self.window_y = 0
+        self.window_x = -1
+        self.window_y = -1
         self.window_width = 0
         self.window_height = 0
         self.attack_token_bounds = ((0.78, 0.6), (0.935, 0.8))
