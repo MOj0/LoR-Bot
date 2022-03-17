@@ -4,7 +4,6 @@ import numpy as np
 import win32api
 import win32con
 import keyboard
-import win32gui
 from time import sleep
 from StateMachine import GameState, DeckType
 
@@ -153,6 +152,7 @@ class Bot:
             print("Confirming mulligan")
             self.click(self.window_x + self.window_width *
                        self.turn_btn_pos[0], self.window_y + self.window_height * self.turn_btn_pos[1])
+            sleep(5)
         elif self.game_state == GameState.Opponent_Turn:
             sleep(3)
             return
@@ -176,7 +176,7 @@ class Bot:
             if len(self.cards_on_board["spell_stack"]) != 0 and all(card.is_spell() for card in self.cards_on_board["spell_stack"]):
                 keyboard.send("space")
                 sleep(1)
-            playable_cards = sorted(filter(lambda card: card.get_name() != "Shadowshift" and card.cost <= self.mana or card.is_spell()
+            playable_cards = sorted(filter(lambda card: card.get_name() != "Shadowshift" and (card.cost <= self.mana or card.is_spell())
                                            and card.cost <= self.mana + self.spell_mana, self.cards_on_board["cards_hand"]), key=lambda card: card.cost, reverse=True)
             if len(playable_cards) == 0 and self.game_state == GameState.Attack_Turn or len(self.cards_on_board["cards_board"]) == 6:
                 keyboard.send("a")
@@ -232,6 +232,8 @@ class Bot:
     def play_card(self, card):
         (x, y) = (self.window_x + card.top_center[0], self.window_y + self.window_height - card.top_center[1])
         print("Playing at: ", x, y)
+        self.click(x, y)
+        sleep(0.5) # Wait for the card maximize animation
         self.hold(x, y)
         for i in range(3):
             sleep(0.5)

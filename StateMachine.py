@@ -149,13 +149,9 @@ class StateMachine:
             return GameState.Menus
 
         # Mulligan check
-        local_cards = filter(lambda card: card["CardCode"] !=
-                             "face" and card["LocalPlayer"], self.game_data["Rectangles"])
-        for in_game_card in local_cards:
-            y = in_game_card["TopLeftY"]
-            if y != 730:  # Mulligan y location TODO: Generalize
-                break
-        else:
+        local_cards = tuple(filter(lambda card: card["CardCode"] !=
+                             "face" and card["LocalPlayer"], self.game_data["Rectangles"]))
+        if local_cards and sum(1 for _ in filter(lambda card: card["TopLeftY"] == 730, local_cards)) == len(local_cards): # TODO: Generalize the 730 y value
             return GameState.Mulligan
 
         if len(self.cards_on_board["opponent_cards_attk"]):

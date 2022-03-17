@@ -18,9 +18,16 @@ bot_thread = threading.Thread(target=bot.run)
 bot_thread.daemon = True
 bot_thread.start()
 
-if bot.get_window_info()[:2] == (-1, -1):  # Only check if x and y coords are -1
+sleep(0.1) # Necessary if we want to call get_window_info_frames now
+
+if state_machine.get_window_info_frames()[0][:2] == (-1, -1):  # Only check if x and y coords are -1
     print(colored("Legends of Runeterra isn't running!", "red"))
     exit(1)
+
+# TODO: Ephemeral deck improvements:
+# GRAVEYARD (retreat weakest units from attack if units from graveyard will spawn in), 
+# Position Hecarim to right for max damage,
+# Retreat Soul Shepard from attack if there is a threat on enemy board (any unit with more or equal than 3 attack)
 
 api_caller = APICaller()
 api_thread = threading.Thread(target=api_caller.call_api)
