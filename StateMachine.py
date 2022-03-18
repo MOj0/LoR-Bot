@@ -5,27 +5,16 @@ import keyboard
 from PIL import ImageGrab
 import numpy as np
 import constants
+from constants import GameState
 import cv2
 from enum import Enum
-
-
-class GameState(Enum):
-    Hold = -1
-    Menus = 0
-    Mulligan = 1
-    Opponent_Turn = 2
-    Defend_Turn = 3
-    Attack_Turn = 4
-    Attacking = 5
-    Blocking = 6
-    Round_End = 7
-    Pass = 8
-    End = 9
+from Ephemeral import Ephemeral
+from Aggro import Aggro
 
 
 class DeckType(Enum):
-    Ephemeral = 0
-    Aggro = 1
+    Ephemeral = Ephemeral
+    Aggro = Aggro
 
 
 class StateMachine:

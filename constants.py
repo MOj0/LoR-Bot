@@ -2,6 +2,20 @@ import numpy as np
 import os
 import json
 from Card import Card
+from enum import Enum
+
+class GameState(Enum):
+    Hold = -1
+    Menus = 0
+    Mulligan = 1
+    Opponent_Turn = 2
+    Defend_Turn = 3
+    Attack_Turn = 4
+    Attacking = 5
+    Blocking = 6
+    Round_End = 7
+    Pass = 8
+    End = 9
 
 # Parse all cards from all sets
 (_, _, card_set_files) = next(os.walk("card_sets"))

@@ -5,8 +5,8 @@ import win32api
 import win32con
 import keyboard
 from time import sleep
-from StateMachine import GameState, DeckType
-
+from StateMachine import DeckType
+from constants import GameState
 
 MANA_MASKS = (constants.ZERO, constants.ONE, constants.TWO, constants.THREE, constants.FOUR,
               constants.FIVE, constants.SIX, constants.SEVEN, constants.EIGHT, constants.NINE, constants.TEN)
@@ -30,6 +30,7 @@ class Bot:
         self.cards_on_board = {}
         self.game_state = GameState
         self.deck_type = DeckType
+        self.deck_strategy = None
         self.mana = 1
         self.prev_mana = 1
         self.spell_mana = 0
@@ -78,6 +79,10 @@ class Bot:
     def run(self):
         while True:
             self.game_state, self.cards_on_board, self.deck_type, self.n_games, self.games_won = self.state_machine.get_game_info()
+
+            if isinstance(self.deck_type, DeckType) and self.deck_strategy is None:
+                self.deck_strategy = self.deck_type.value()  # Create a new DeckStrategy object from DeckType
+
             if self.game_state == GameState.End:
                 print("Game ended... waiting for animations")
                 sleep(20)
@@ -85,6 +90,7 @@ class Bot:
                 # Reset variables
                 self.mana = self.prev_mana = self.turn = 1
                 self.spell_mana = self.block_counter = 0
+                self.deck_strategy = None
 
                 self.continue_and_replay()
                 continue
@@ -142,13 +148,11 @@ class Bot:
             # Get cards_on_board again, since they might have updated
             self.game_state, self.cards_on_board, self.deck_type, self.n_games, self.games_won = self.state_machine.get_game_info()
             in_game_cards = [card for cards in self.cards_on_board.values() for card in cards]
-            for in_game_card_obj in in_game_cards:
-                if in_game_card_obj.cost > 3:
-                    cx = self.window_x + in_game_card_obj.top_center[0]
-                    cy = self.window_y + self.window_height - in_game_card_obj.top_center[1]
-                    print("Cost greater than 3, clicking at", cx, cy)
-                    self.click(cx, cy)
-                    sleep(0.5)
+
+            # Execute mulligan
+            if self.deck_strategy:
+                self.deck_strategy.mulligan(in_game_cards, self.window_x, self.window_y, self.window_height)
+
             print("Confirming mulligan")
             self.click(self.window_x + self.window_width *
                        self.turn_btn_pos[0], self.window_y + self.window_height * self.turn_btn_pos[1])
@@ -157,48 +161,38 @@ class Bot:
             sleep(3)
             return
         elif self.game_state == GameState.Blocking:
-            if not self.first_pass_blocking:
+            if not self.first_pass_blocking: # Double check to avoid False Positives (card draw animation, card play animation...)
                 self.first_pass_blocking = True
                 print("first blocking pass...")
                 sleep(5)
                 return
-
-            for i, blocking_card in enumerate(self.cards_on_board["cards_board"]):
-                if i < self.block_counter or blocking_card.get_name() == "Zed" or "Can't Block" in blocking_card.keywords:
-                    continue
-                if self.blocked_with(blocking_card, self.cards_on_board["opponent_cards_attk"], self.cards_on_board["cards_attk"]):
-                    self.block_counter = (self.block_counter + 1) % len(self.cards_on_board["cards_board"])
-                    break
-            else:
-                self.block_counter = 0
-                keyboard.send("space")
+            # Execute block
+            self.deck_strategy.block(self.cards_on_board, self.window_x, self.window_y, self.window_height)
         elif self.game_state == GameState.Defend_Turn or self.game_state == GameState.Attack_Turn:
             if len(self.cards_on_board["spell_stack"]) != 0 and all(card.is_spell() for card in self.cards_on_board["spell_stack"]):
                 keyboard.send("space")
-                sleep(1)
-            playable_cards = sorted(filter(lambda card: card.get_name() != "Shadowshift" and (card.cost <= self.mana or card.is_spell())
+                sleep(2)
+            playable_cards = sorted(filter(lambda card: card.cost <= self.mana or card.is_spell()
                                            and card.cost <= self.mana + self.spell_mana, self.cards_on_board["cards_hand"]), key=lambda card: card.cost, reverse=True)
             if len(playable_cards) == 0 and self.game_state == GameState.Attack_Turn or len(self.cards_on_board["cards_board"]) == 6:
-                keyboard.send("a")
+                keyboard.send("a")  # TODO: Improve attack strategy
                 sleep(1.25)
                 keyboard.send("space")
+                sleep(2)
             else:
-                for playable_card_in_hand in playable_cards:
-                    if self.deck_type == DeckType.Ephemeral and (self.game_state == GameState.Attack_Turn and ("Ephemeral" in playable_card_in_hand.keywords or playable_card_in_hand.get_name() in ("Zed", "Hecarim", "Commander Ledros") or playable_card_in_hand.is_spell())
-                                                                 or self.game_state == GameState.Defend_Turn and "Ephemeral" not in playable_card_in_hand.keywords and not playable_card_in_hand.is_spell()) \
-                            or self.deck_type == DeckType.Aggro:
-                        print("Playing card: ", playable_card_in_hand)
-                        self.play_card(playable_card_in_hand)
-                        diff = playable_card_in_hand.cost
-                        if playable_card_in_hand.is_spell():
-                            diff = max(0, playable_card_in_hand.cost - self.spell_mana)
-                            self.spell_mana = max(0, self.spell_mana - playable_card_in_hand.cost)
-                        self.mana -= diff
-                        self.prev_mana = self.mana
-                        break
+                playable_card_in_hand = self.deck_strategy.playable_card(playable_cards, self.game_state)
+                if playable_card_in_hand:
+                    print("Playing card: ", playable_card_in_hand)
+                    self.play_card(playable_card_in_hand)
+                    diff = playable_card_in_hand.cost
+                    if playable_card_in_hand.is_spell():
+                        diff = max(0, playable_card_in_hand.cost - self.spell_mana)
+                        self.spell_mana = max(0, self.spell_mana - playable_card_in_hand.cost)
+                    self.mana -= diff
+                    self.prev_mana = self.mana
                 else:
                     if self.game_state == GameState.Attack_Turn:
-                        keyboard.send("a")
+                        keyboard.send("a")  # TODO: Improve attack strategy
                         sleep(1.25)
                     keyboard.send("space")
                     sleep(2)
@@ -231,9 +225,8 @@ class Bot:
 
     def play_card(self, card):
         (x, y) = (self.window_x + card.top_center[0], self.window_y + self.window_height - card.top_center[1])
-        print("Playing at: ", x, y)
         self.click(x, y)
-        sleep(0.5) # Wait for the card maximize animation
+        sleep(0.5)  # Wait for the card maximize animation
         self.hold(x, y)
         for i in range(3):
             sleep(0.5)
