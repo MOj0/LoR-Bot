@@ -161,7 +161,8 @@ class Bot:
             sleep(3)
             return
         elif self.game_state == GameState.Blocking:
-            if not self.first_pass_blocking: # Double check to avoid False Positives (card draw animation, card play animation...)
+            # Double check to avoid False Positives (card draw animation, card play animation...)
+            if not self.first_pass_blocking:
                 self.first_pass_blocking = True
                 print("first blocking pass...")
                 sleep(5)
@@ -171,14 +172,21 @@ class Bot:
         elif self.game_state == GameState.Defend_Turn or self.game_state == GameState.Attack_Turn:
             if len(self.cards_on_board["spell_stack"]) != 0 and all(card.is_spell() for card in self.cards_on_board["spell_stack"]):
                 keyboard.send("space")
-                sleep(2)
+                sleep(4)
+                return
             playable_cards = sorted(filter(lambda card: card.cost <= self.mana or card.is_spell()
                                            and card.cost <= self.mana + self.spell_mana, self.cards_on_board["cards_hand"]), key=lambda card: card.cost, reverse=True)
             if len(playable_cards) == 0 and self.game_state == GameState.Attack_Turn or len(self.cards_on_board["cards_board"]) == 6:
-                keyboard.send("a")  # TODO: Improve attack strategy
+                keyboard.send("a")
+
+                # Sleep so API gets called again and get cards_on_board info
                 sleep(1.25)
+                self.game_state, self.cards_on_board, self.deck_type, self.n_games, self.games_won = self.state_machine.get_game_info()
+
+                self.deck_strategy.attack(self.cards_on_board, self.window_x, self.window_y, self.window_height)
+                sleep(0.25)
+
                 keyboard.send("space")
-                sleep(2)
             else:
                 playable_card_in_hand = self.deck_strategy.playable_card(playable_cards, self.game_state)
                 if playable_card_in_hand:
@@ -192,36 +200,15 @@ class Bot:
                     self.prev_mana = self.mana
                 else:
                     if self.game_state == GameState.Attack_Turn:
-                        keyboard.send("a")  # TODO: Improve attack strategy
+                        keyboard.send("a") 
+
+                        # Sleep so API gets called again and get cards_on_board info
                         sleep(1.25)
+                        self.game_state, self.cards_on_board, self.deck_type, self.n_games, self.games_won = self.state_machine.get_game_info()
+                        sleep(1)
+
                     keyboard.send("space")
-                    sleep(2)
-
-    def blocked_with(self, blocking_card, enemy_cards, ally_cards):
-        for enemy_card in enemy_cards:
-            if "Elusive" in enemy_card.keywords:
-                continue
-            is_blockable = True
-            # if "Ephemeral" in blocking_card.keywords or enemy_card.attack < blocking_card.health:  # Defensive block
-            if "Ephemeral" in blocking_card.keywords or enemy_card.health <= blocking_card.attack:  # Aggressive block
-                for ally_card in ally_cards:  # Check if card is already blocked or elusive
-                    if abs(ally_card.get_pos()[0] - enemy_card.get_pos()[0]) < 10:
-                        is_blockable = False
-                        break
-                if is_blockable:
-                    self.drag_card_from_to(blocking_card.get_pos(), enemy_card.get_pos())
-                    return True
-        return False
-
-    def drag_card_from_to(self, pos_src, pos_dest):
-        pos_src = (self.window_x + pos_src[0], self.window_y + self.window_height - pos_src[1])
-        pos_dest = (self.window_x + pos_dest[0], self.window_y + self.window_height - pos_dest[1])
-        self.hold(pos_src)
-        sleep(0.3)
-        win32api.SetCursorPos(((pos_src[0] + pos_dest[0]) // 2, (pos_src[1] + pos_dest[1]) // 2))
-        sleep(1)
-        self.release(pos_dest)
-        sleep(0.5)
+            sleep(4)
 
     def play_card(self, card):
         (x, y) = (self.window_x + card.top_center[0], self.window_y + self.window_height - card.top_center[1])
