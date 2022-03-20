@@ -13,7 +13,7 @@ class Card:
     def get_name(self):
         return self.name
 
-    def is_spell(self):
+    def is_spell(self) -> bool:
         return self.type == "Spell"
 
 

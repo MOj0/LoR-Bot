@@ -13,7 +13,7 @@ FONT = cv2.FONT_HERSHEY_SIMPLEX
 
 state_machine = StateMachine()
 
-bot = Bot(state_machine, is_vs_ai=False)
+bot = Bot(state_machine, is_vs_ai=True)
 bot_thread = threading.Thread(target=bot.run)
 bot_thread.daemon = True
 bot_thread.start()
@@ -24,12 +24,6 @@ if state_machine.get_window_info_frames()[0][:2] == (-1, -1):  # Only check if x
     print(colored("Legends of Runeterra isn't running!", "red"))
     exit(1)
 
-# FIXME: SPACE IS PRESSED TOO MANY TIMES (FALSE POSITIVES!!)
-# TODO: Ephemeral deck improvements:
-# GRAVEYARD (retreat weakest units from attack if units from graveyard will spawn in), 
-# Position Hecarim to right for max damage,
-# Retreat Soul Shepard from attack if there is a threat on enemy board (any unit with more or equal than 3 attack)
-# Take Enchoracing Shadows into account!
 
 api_caller = APICaller()
 api_thread = threading.Thread(target=api_caller.call_api)

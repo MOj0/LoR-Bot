@@ -1,15 +1,21 @@
 from time import sleep
-import keyboard
 import win32api
 import win32con
 from constants import GameState
+from collections import defaultdict
 
 
 class Ephemeral:
     def __init__(self):
+        self.graveyard = defaultdict(int)  # Counter of dead cards, (Harrowing) 
         self.spawn_on_attack = 0  # Increments when Shark Chariot dies
         self.block_counter = 0
         self.mulligan_cards = ("Zed", "Hecarim", "Shark Chariot", "Shadow Fiend")
+        self.hecarim_backed = False
+
+        self.window_x = 0
+        self.window_y = 0
+        self.window_height = 0
 
     def click(self, pos, y=None):
         if y is not None:
@@ -40,9 +46,9 @@ class Ephemeral:
         win32api.SetCursorPos((x, y))
         win32api.mouse_event(win32con.MOUSEEVENTF_LEFTUP, x, y, 0, 0)
 
-    def drag_card_from_to(self, pos_src, pos_dest, window_x, window_y, window_height):
-        pos_src = (window_x + pos_src[0], window_y + window_height - pos_src[1])
-        pos_dest = (window_x + pos_dest[0], window_y + window_height - pos_dest[1])
+    def drag_card_from_to(self, pos_src, pos_dest):
+        pos_src = (self.window_x + pos_src[0], self.window_y + self.window_height - pos_src[1])
+        pos_dest = (self.window_x + pos_dest[0], self.window_y + self.window_height - pos_dest[1])
         self.hold(pos_src)
         sleep(0.3)
         win32api.SetCursorPos(((pos_src[0] + pos_dest[0]) // 2, (pos_src[1] + pos_dest[1]) // 2))
@@ -51,6 +57,11 @@ class Ephemeral:
         sleep(0.5)
 
     def mulligan(self, cards, window_x, window_y, window_height):
+        # Window stuff
+        self.window_x = window_x
+        self.window_y = window_y
+        self.window_height = window_height
+        
         for in_game_card_obj in cards:
             if in_game_card_obj.get_name() not in self.mulligan_cards:
                 cx = window_x + in_game_card_obj.top_center[0]
@@ -59,17 +70,22 @@ class Ephemeral:
                 sleep(0.5)
 
     def block(self, cards_on_board, window_x, window_y, window_height):
+        # Window stuff
+        self.window_x = window_x
+        self.window_y = window_y
+        self.window_height = window_height
+
         for i, blocking_card in enumerate(cards_on_board["cards_board"]):
             if i < self.block_counter or blocking_card.get_name() == "Zed" or "Can't Block" in blocking_card.keywords:
                 continue
-            if self.blocked_with(blocking_card, cards_on_board["opponent_cards_attk"], cards_on_board["cards_attk"], window_x, window_y, window_height):
+            if self.blocked_with(blocking_card, cards_on_board["opponent_cards_attk"], cards_on_board["cards_attk"]):
                 self.block_counter = (self.block_counter + 1) % len(cards_on_board["cards_board"])
-                break
-        else:
-            self.block_counter = 0
-            keyboard.send("space")
+                return True
 
-    def blocked_with(self, blocking_card, enemy_cards, ally_cards, window_x, window_y, window_height):
+        self.block_counter = 0
+        return False
+
+    def blocked_with(self, blocking_card, enemy_cards, ally_cards):
         for enemy_card in enemy_cards:
             if "Elusive" in enemy_card.keywords:
                 continue
@@ -81,21 +97,24 @@ class Ephemeral:
                         is_blockable = False
                         break
                 if is_blockable:
-                    self.drag_card_from_to(blocking_card.get_pos(), enemy_card.get_pos(),
-                                           window_x, window_y, window_height)
+                    self.drag_card_from_to(blocking_card.get_pos(), enemy_card.get_pos())
                     return True
         return False
 
     def playable_card(self, playable_cards, game_state):
-        for playable_card_in_hand in playable_cards:
-            if playable_card_in_hand.get_name() == "Shadowshift":
+        attack_sort = sorted(playable_cards, key=lambda attack_card: attack_card.cost + 3 * int(attack_card.is_spell()) +
+                             3 * int("Ephemeral" in attack_card.keywords), reverse=True)
+        for playable_card_in_hand in attack_sort:
+            name = playable_card_in_hand.get_name()
+            if name == "Shadowshift" or name == "The Harrowing" and "Hecarim" not in self.graveyard:
                 continue
-            if game_state == GameState.Attack_Turn and ("Ephemeral" in playable_card_in_hand.keywords or playable_card_in_hand.get_name() in ("Zed", "Hecarim", "Commander Ledros", "Shark Chariot") or playable_card_in_hand.is_spell()) or \
-                    game_state == GameState.Defend_Turn and ("Ephemeral" not in playable_card_in_hand.keywords and not playable_card_in_hand.is_spell()):
+            if game_state == GameState.Attack_Turn or game_state == GameState.Defend_Turn and ("Ephemeral" not in playable_card_in_hand.keywords and not playable_card_in_hand.is_spell()):
+                if not playable_card_in_hand.is_spell():
+                    # Assume a unit is dead as soon as you play it (its an Ephemeral deck anyways)
+                    self.graveyard[playable_card_in_hand.get_name()] += 1
                 return playable_card_in_hand
         return None
 
-    # TODO: Return False if attack is not complete, so Bot will keep calling it! That way you can update the game data!
     def attack(self, cards_on_board, window_x, window_y, window_height):
         n_attackers = len(cards_on_board["cards_attk"])
         n_non_ephemeral = sum(1 for attack_card in cards_on_board["cards_attk"] if "Ephemeral" not in attack_card.keywords and attack_card.get_name(
@@ -108,14 +127,40 @@ class Ephemeral:
             elif name == "Hecarim":
                 n_to_be_spawned += 2
         print("to be spawned: ", n_to_be_spawned)
-        # Remove non ephemeral units from board if attack would overflow
-        if n_attackers + n_to_be_spawned > 6 and n_non_ephemeral > 0:  # TODO: Change to while and get data from API, since card positions will change!
+
+        # Check if non-ephemeral unit can be killed
+        for attack_card in cards_on_board["cards_attk"]:
+            unit_in_danger = attack_card.attack == 0 or "Ephemeral" not in attack_card.keywords and any(map(
+                lambda enemy_card: enemy_card.attack >= attack_card.health + 2, cards_on_board["opponent_cards_board"]))
+            if unit_in_danger:
+                self.drag_card_from_to(attack_card.get_pos(), (attack_card.get_pos()[0], window_height - 100))
+                return False
+
+        # If attack would overflow
+        if n_attackers + n_to_be_spawned > 6 and n_non_ephemeral > 0:
             for attack_card in cards_on_board["cards_attk"]:
                 if "Ephemeral" not in attack_card.keywords and attack_card.get_name() != "Zed" and attack_card.get_name() != "Hecarim":
-                    self.drag_card_from_to(attack_card.get_pos(), (attack_card.get_pos()[0], window_height - 100),
-                                           window_x, window_y, window_height)
+                    self.drag_card_from_to(attack_card.get_pos(), (attack_card.get_pos()[0], window_height - 100))
+                    return False
+
+        # Position Hecarim to the right for max damage output
+        if not self.hecarim_backed:  # Retreat Hecarim from attack
+            for attack_card in cards_on_board["cards_attk"]:
+                if attack_card.get_name() == "Hecarim":
+                    self.drag_card_from_to(attack_card.get_pos(), (attack_card.get_pos()[0], window_height - 100))
+                    self.hecarim_backed = True
+                    sleep(1)
+                    return False  # Not done yet
+        else:  # Put Hecarim back in attack to the last position
+            for unit_card in cards_on_board["cards_board"]:
+                if unit_card.get_name() == "Hecarim":
+                    self.drag_card_from_to(unit_card.get_pos(), (unit_card.get_pos()[0], window_height // 2))
+                    self.hecarim_backed = False
+                    sleep(1)
                     break
 
-        n_shark_chariots = sum(1 for attack_card in cards_on_board["cards_attk"] if attack_card.get_name() == "Shark Chariot")
+        n_shark_chariots = sum(
+            1 for attack_card in cards_on_board["cards_attk"] if attack_card.get_name() == "Shark Chariot")
         self.spawn_on_attack = max(self.spawn_on_attack, n_shark_chariots)
         print("spawn on attack: ", self.spawn_on_attack)
+        return True

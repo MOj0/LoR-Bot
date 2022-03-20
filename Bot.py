@@ -14,7 +14,7 @@ NUM_PX_MASK = tuple(sum(val for line in mask for val in line) for mask in MANA_M
 
 
 class Bot:
-    """Plays the game, responisble for logic/strategy"""
+    """Plays the game, responisble for executing commands from DeckStrategy"""
 
     def __init__(self, state_machine, is_vs_ai=True):
         self.state_machine = state_machine
@@ -38,7 +38,7 @@ class Bot:
         self.games_won = 0
         self.n_games = 0
         self.first_pass_blocking = False
-        self.block_counter = 0
+        self.first_pass_spell = False
 
     def _get_mana(self, frames):
         # Magic
@@ -85,11 +85,11 @@ class Bot:
 
             if self.game_state == GameState.End:
                 print("Game ended... waiting for animations")
-                sleep(20)
+                sleep(8)
 
                 # Reset variables
                 self.mana = self.prev_mana = self.turn = 1
-                self.spell_mana = self.block_counter = 0
+                self.spell_mana = 0
                 self.deck_strategy = None
 
                 self.continue_and_replay()
@@ -111,7 +111,7 @@ class Bot:
     def continue_and_replay(self):
         sleep(4)
         continue_btn_pos = (self.window_x + 0.66 * self.window_width, self.window_y + self.window_height * 0.90)
-        for _ in range(4):
+        for _ in range(8):
             self.click(continue_btn_pos)
             sleep(1.5)
         sleep(1)
@@ -126,14 +126,13 @@ class Bot:
             return False
         if self.mana == -1:
             print("Unknown mana...")
-            sleep(1.5)
+            sleep(4)
             return False
         if self.mana > self.turn:  # New turn
             self.spell_mana = min(self.spell_mana + self.prev_mana, 3)
             self.turn = self.mana
             self.prev_mana = self.mana
-            self.first_pass_blocking = False
-            self.block_counter = 0
+            self.first_pass_blocking = self.first_pass_spell = False
             sleep(2)
             return False
         return True
@@ -154,8 +153,8 @@ class Bot:
                 self.deck_strategy.mulligan(in_game_cards, self.window_x, self.window_y, self.window_height)
 
             print("Confirming mulligan")
-            self.click(self.window_x + self.window_width *
-                       self.turn_btn_pos[0], self.window_y + self.window_height * self.turn_btn_pos[1])
+            keyboard.send("space")
+            
             sleep(5)
         elif self.game_state == GameState.Opponent_Turn:
             sleep(3)
@@ -167,10 +166,21 @@ class Bot:
                 print("first blocking pass...")
                 sleep(5)
                 return
-            # Execute block
-            self.deck_strategy.block(self.cards_on_board, self.window_x, self.window_y, self.window_height)
+
+            # Block one by one
+            while self.deck_strategy.block(self.cards_on_board, self.window_x, self.window_y, self.window_height):
+                sleep(2)
+                self.game_state, self.cards_on_board, self.deck_type, self.n_games, self.games_won = self.state_machine.get_game_info()
+
+            keyboard.send("space")
         elif self.game_state == GameState.Defend_Turn or self.game_state == GameState.Attack_Turn:
             if len(self.cards_on_board["spell_stack"]) != 0 and all(card.is_spell() for card in self.cards_on_board["spell_stack"]):
+                # Double check to avoid False Positives
+                if not self.first_pass_spell:
+                    self.first_pass_spell = True
+                    print("first spell pass...")
+                    sleep(8)
+                    return
                 keyboard.send("space")
                 sleep(4)
                 return
@@ -183,8 +193,9 @@ class Bot:
                 sleep(1.25)
                 self.game_state, self.cards_on_board, self.deck_type, self.n_games, self.games_won = self.state_machine.get_game_info()
 
-                self.deck_strategy.attack(self.cards_on_board, self.window_x, self.window_y, self.window_height)
-                sleep(0.25)
+                while not self.deck_strategy.attack(self.cards_on_board, self.window_x, self.window_y, self.window_height):
+                    sleep(1.25)
+                    self.game_state, self.cards_on_board, self.deck_type, self.n_games, self.games_won = self.state_machine.get_game_info()
 
                 keyboard.send("space")
             else:
@@ -200,7 +211,7 @@ class Bot:
                     self.prev_mana = self.mana
                 else:
                     if self.game_state == GameState.Attack_Turn:
-                        keyboard.send("a") 
+                        keyboard.send("a")
 
                         # Sleep so API gets called again and get cards_on_board info
                         sleep(1.25)
@@ -208,7 +219,7 @@ class Bot:
                         sleep(1)
 
                     keyboard.send("space")
-            sleep(4)
+        sleep(4)
 
     def play_card(self, card):
         (x, y) = (self.window_x + card.top_center[0], self.window_y + self.window_height - card.top_center[1])
