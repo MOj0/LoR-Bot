@@ -82,6 +82,8 @@ class Bot:
 
             if isinstance(self.deck_type, DeckType) and self.deck_strategy is None:
                 self.deck_strategy = self.deck_type.value()  # Create a new DeckStrategy object from DeckType
+                if self.deck_strategy.deck is None and self.deck_type == DeckType.Pirates:
+                    self.deck_strategy.set_deck(tuple(self.state_machine.get_deck()))
 
             if self.game_state == GameState.End:
                 print("Game ended... waiting for animations")
@@ -108,10 +110,12 @@ class Bot:
                 continue
             self.play()
 
+            win32api.SetCursorPos((self.window_x, self.window_y))
+
     def continue_and_replay(self):
         sleep(4)
         continue_btn_pos = (self.window_x + 0.66 * self.window_width, self.window_y + self.window_height * 0.90)
-        for _ in range(8):
+        for _ in range(16):
             self.click(continue_btn_pos)
             sleep(1.5)
         sleep(1)
@@ -203,12 +207,12 @@ class Bot:
 
                 keyboard.send("space")
             else:
-                playable_card_in_hand = self.deck_strategy.playable_card(playable_cards, self.game_state)
+                playable_card_in_hand = self.deck_strategy.playable_card(playable_cards, self.game_state, self.cards_on_board)
                 if playable_card_in_hand:
                     print("Playing card: ", playable_card_in_hand)
                     self.play_card(playable_card_in_hand)
 
-                    # Grant/Pick an ally in hand
+                    # Grant/Pick an ally in hand mechanic
                     if "ally in hand" in playable_card_in_hand.description_raw:
                         sleep(1.25)
                         self.game_state, self.cards_on_board, self.deck_type, self.n_games, self.games_won = self.state_machine.get_game_info(
@@ -220,6 +224,23 @@ class Bot:
                             card_to_click = self.deck_strategy.get_card_in_hand(units_in_hand, select_epehemral)
                             self.click(
                                 self.window_x + card_to_click.top_center[0], self.window_y + self.window_height - card_to_click.top_center[1])
+                    # Imperial Demolist play effect
+                    elif "to an ally" in playable_card_in_hand.description_raw and len(self.cards_on_board["cards_board"]) != 0:
+                        for card_to_click in self.cards_on_board["cards_board"]:
+                            if card_to_click.health > 1:
+                                self.click(
+                                    self.window_x + card_to_click.top_center[0], self.window_y + self.window_height - card_to_click.top_center[1])
+                                sleep(0.5)
+                                break
+                        else:
+                            keyboard.send("space")
+                    elif playable_card_in_hand.get_name() == "Petty Officer":
+                        sleep(0.75)
+                        self.click(self.window_x + 4 * self.window_width // 7, self.window_y + self.window_height // 2)
+                        sleep(1)
+
+                    if "Attune" in playable_card_in_hand.keywords:
+                        self.spell_mana = min(3, self.spell_mana + 1)
 
                     # Calculate spell mana if necessary
                     if playable_card_in_hand.is_spell():
@@ -232,13 +253,6 @@ class Bot:
                         if self.mana != -1:
                             break
                     self.prev_mana = self.mana
-
-                    # diff = playable_card_in_hand.cost
-                    # if playable_card_in_hand.is_spell():
-                    #     diff = max(0, playable_card_in_hand.cost - self.spell_mana)
-                    #     self.spell_mana = max(0, self.spell_mana - playable_card_in_hand.cost)
-                    # self.mana -= diff
-                    # self.prev_mana = self.mana
                 else:
                     if self.game_state == GameState.Attack_Turn:
                         keyboard.send("a")

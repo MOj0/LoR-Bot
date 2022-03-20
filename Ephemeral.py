@@ -101,7 +101,7 @@ class Ephemeral:
                     return True
         return False
 
-    def playable_card(self, playable_cards, game_state):
+    def playable_card(self, playable_cards, game_state, cards_on_board):
         attack_sort = sorted(playable_cards, key=lambda attack_card: attack_card.cost + 3 * int(attack_card.is_spell()) +
                              3 * int("Ephemeral" in attack_card.keywords), reverse=True)
         for playable_card_in_hand in attack_sort:

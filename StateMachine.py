@@ -10,11 +10,12 @@ import cv2
 from enum import Enum
 from Ephemeral import Ephemeral
 from Aggro import Aggro
-
+from Pirates import Pirates
 
 class DeckType(Enum):
     Ephemeral = Ephemeral
     Aggro = Aggro
+    Pirates = Pirates
 
 
 class StateMachine:
@@ -32,6 +33,7 @@ class StateMachine:
         self.game_data = {}
         self.game_result = {}
         self.cards_data = {}
+        self.deck = None
         self.frames = None
         self.games_won = 0
         self.n_games = 0
@@ -184,10 +186,17 @@ class StateMachine:
 
     def _get_deck_type(self):
         if self.cards_data and self.cards_data["CardsInDeck"]:
-            deck = (constants.ALL_CARDS[cardCode] for cardCode, num_cards in self.cards_data["CardsInDeck"].items()
+            self.deck = tuple(constants.ALL_CARDS[cardCode] for cardCode, num_cards in self.cards_data["CardsInDeck"].items()
                     for _ in range(num_cards))
-            self.deck_type = DeckType.Ephemeral if any(
-                "Ephemeral" in card.keywords for card in deck) else DeckType.Aggro
+            if any("Ephemeral" in card.keywords for card in self.deck):
+                self.deck_type = DeckType.Ephemeral
+            elif any(card.get_name() == "Gangplank" for card in self.deck):
+                self.deck_type = DeckType.Pirates
+            else:
+                self.deck_type = DeckType.Aggro
+    
+    def get_deck(self):
+        return self.deck
 
     def get_display_data(self) -> dict:
         return {"game_state": self.game_state, "board_state": self.cards_on_board, "deck_type": self.deck_type,
