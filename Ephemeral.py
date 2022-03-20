@@ -10,7 +10,7 @@ class Ephemeral:
         self.graveyard = defaultdict(int)  # Counter of dead cards, (Harrowing) 
         self.spawn_on_attack = 0  # Increments when Shark Chariot dies
         self.block_counter = 0
-        self.mulligan_cards = ("Zed", "Hecarim", "Shark Chariot", "Shadow Fiend")
+        self.mulligan_cards = ("Zed", "Shark Chariot", "Shadow Fiend")
         self.hecarim_backed = False
 
         self.window_x = 0
@@ -106,7 +106,7 @@ class Ephemeral:
                              3 * int("Ephemeral" in attack_card.keywords), reverse=True)
         for playable_card_in_hand in attack_sort:
             name = playable_card_in_hand.get_name()
-            if name == "Shadowshift" or name == "The Harrowing" and "Hecarim" not in self.graveyard:
+            if name == "Shadowshift":
                 continue
             if game_state == GameState.Attack_Turn or game_state == GameState.Defend_Turn and ("Ephemeral" not in playable_card_in_hand.keywords and not playable_card_in_hand.is_spell()):
                 if not playable_card_in_hand.is_spell():
@@ -116,6 +116,11 @@ class Ephemeral:
         return None
 
     def attack(self, cards_on_board, window_x, window_y, window_height):
+        # Window stuff
+        self.window_x = window_x
+        self.window_y = window_y
+        self.window_height = window_height
+
         n_attackers = len(cards_on_board["cards_attk"])
         n_non_ephemeral = sum(1 for attack_card in cards_on_board["cards_attk"] if "Ephemeral" not in attack_card.keywords and attack_card.get_name(
         ) != "Zed" and attack_card.get_name() != "Hecarim")
@@ -128,11 +133,11 @@ class Ephemeral:
                 n_to_be_spawned += 2
         print("to be spawned: ", n_to_be_spawned)
 
-        # Check if non-ephemeral unit can be killed
+        # Check if non-ephemeral unit is in danger
         for attack_card in cards_on_board["cards_attk"]:
             unit_in_danger = attack_card.attack == 0 or "Ephemeral" not in attack_card.keywords and any(map(
                 lambda enemy_card: enemy_card.attack >= attack_card.health + 2, cards_on_board["opponent_cards_board"]))
-            if unit_in_danger:
+            if unit_in_danger and attack_card.get_name() != "Zed" and "Elusive" not in attack_card.keywords:
                 self.drag_card_from_to(attack_card.get_pos(), (attack_card.get_pos()[0], window_height - 100))
                 return False
 
@@ -144,14 +149,14 @@ class Ephemeral:
                     return False
 
         # Position Hecarim to the right for max damage output
-        if not self.hecarim_backed:  # Retreat Hecarim from attack
+        if any(map(lambda attk_card: attk_card.get_name() == "Hecarim", cards_on_board["cards_attk"])) and not self.hecarim_backed :  # Retreat Hecarim from attack if it is on board
             for attack_card in cards_on_board["cards_attk"]:
                 if attack_card.get_name() == "Hecarim":
                     self.drag_card_from_to(attack_card.get_pos(), (attack_card.get_pos()[0], window_height - 100))
                     self.hecarim_backed = True
                     sleep(1)
                     return False  # Not done yet
-        else:  # Put Hecarim back in attack to the last position
+        elif self.hecarim_backed:  # Put Hecarim back in attack to the last position
             for unit_card in cards_on_board["cards_board"]:
                 if unit_card.get_name() == "Hecarim":
                     self.drag_card_from_to(unit_card.get_pos(), (unit_card.get_pos()[0], window_height // 2))
@@ -164,3 +169,10 @@ class Ephemeral:
         self.spawn_on_attack = max(self.spawn_on_attack, n_shark_chariots)
         print("spawn on attack: ", self.spawn_on_attack)
         return True
+
+    def get_card_in_hand(self, units_in_hand, select_ephemeral):
+        if select_ephemeral:
+            ephemerals = filter(lambda card_in_hand: "Ephemeral" in card_in_hand.keywords, units_in_hand)
+            return next(ephemerals, units_in_hand[0])
+        # select_ephemeral == False -> select the strongest
+        return max(units_in_hand, key=lambda card_in_hand: card_in_hand.attack + card_in_hand.health)

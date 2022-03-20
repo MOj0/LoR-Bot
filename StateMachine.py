@@ -47,7 +47,7 @@ class StateMachine:
             for i, r in enumerate(rect):
                 window_info[i] = r
 
-    def get_game_info(self) -> tuple:
+    def get_game_info(self, call_game_state=True) -> tuple:
         # Get window data
         win32gui.EnumWindows(self._update_window_info, self.window_info)
         self.window_x, self.window_y, self.window_width, self.window_height = self.window_info[0], self.window_info[
@@ -59,12 +59,17 @@ class StateMachine:
         image = self.frames[-1]
 
         self._get_cards_on_board()
-        self.game_state = self._get_game_state(self.frames, image)
+        if call_game_state:
+            self.game_state = self._get_game_state(self.frames, image)
 
         return tuple((self.game_state, self.cards_on_board, self.deck_type, self.n_games, self.games_won))
 
     def get_window_info_frames(self) -> tuple:
         return tuple((self.get_window_info(), self.frames))
+
+    def request_frames(self) -> tuple:
+        return tuple(ImageGrab.grab(bbox=(self.window_x, self.window_y, self.window_x + self.window_width, self.window_y +
+                                          self.window_height), all_screens=True) for _ in range(4))
 
     # API Stuff
 
@@ -139,8 +144,9 @@ class StateMachine:
 
         # Mulligan check
         local_cards = tuple(filter(lambda card: card["CardCode"] !=
-                             "face" and card["LocalPlayer"], self.game_data["Rectangles"]))
-        if local_cards and sum(1 for _ in filter(lambda card: card["TopLeftY"] == 730, local_cards)) == len(local_cards): # TODO: Generalize the 730 y value
+                                   "face" and card["LocalPlayer"], self.game_data["Rectangles"]))
+        # TODO: Generalize the 730 y value
+        if local_cards and sum(1 for _ in filter(lambda card: card["TopLeftY"] == 730, local_cards)) == len(local_cards):
             return GameState.Mulligan
 
         if len(self.cards_on_board["opponent_cards_attk"]):

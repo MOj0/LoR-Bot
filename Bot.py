@@ -16,9 +16,9 @@ NUM_PX_MASK = tuple(sum(val for line in mask for val in line) for mask in MANA_M
 class Bot:
     """Plays the game, responisble for executing commands from DeckStrategy"""
 
-    def __init__(self, state_machine, is_vs_ai=True):
+    def __init__(self, state_machine, pvp=True):
         self.state_machine = state_machine
-        self.is_vs_ai = is_vs_ai
+        self.pvp = pvp
         self.font = cv2.FONT_HERSHEY_SIMPLEX
         self.window_x = -1
         self.window_y = -1
@@ -145,7 +145,8 @@ class Bot:
             sleep(10)
 
             # Get cards_on_board again, since they might have updated
-            self.game_state, self.cards_on_board, self.deck_type, self.n_games, self.games_won = self.state_machine.get_game_info()
+            self.game_state, self.cards_on_board, self.deck_type, self.n_games, self.games_won = self.state_machine.get_game_info(
+                call_game_state=False)
             in_game_cards = [card for cards in self.cards_on_board.values() for card in cards]
 
             # Execute mulligan
@@ -154,7 +155,7 @@ class Bot:
 
             print("Confirming mulligan")
             keyboard.send("space")
-            
+
             sleep(5)
         elif self.game_state == GameState.Opponent_Turn:
             sleep(3)
@@ -170,7 +171,8 @@ class Bot:
             # Block one by one
             while self.deck_strategy.block(self.cards_on_board, self.window_x, self.window_y, self.window_height):
                 sleep(2)
-                self.game_state, self.cards_on_board, self.deck_type, self.n_games, self.games_won = self.state_machine.get_game_info()
+                self.game_state, self.cards_on_board, self.deck_type, self.n_games, self.games_won = self.state_machine.get_game_info(
+                    call_game_state=False)
 
             keyboard.send("space")
         elif self.game_state == GameState.Defend_Turn or self.game_state == GameState.Attack_Turn:
@@ -179,7 +181,7 @@ class Bot:
                 if not self.first_pass_spell:
                     self.first_pass_spell = True
                     print("first spell pass...")
-                    sleep(8)
+                    sleep(12)
                     return
                 keyboard.send("space")
                 sleep(4)
@@ -191,11 +193,13 @@ class Bot:
 
                 # Sleep so API gets called again and get cards_on_board info
                 sleep(1.25)
-                self.game_state, self.cards_on_board, self.deck_type, self.n_games, self.games_won = self.state_machine.get_game_info()
+                self.game_state, self.cards_on_board, self.deck_type, self.n_games, self.games_won = self.state_machine.get_game_info(
+                    call_game_state=False)
 
                 while not self.deck_strategy.attack(self.cards_on_board, self.window_x, self.window_y, self.window_height):
                     sleep(1.25)
-                    self.game_state, self.cards_on_board, self.deck_type, self.n_games, self.games_won = self.state_machine.get_game_info()
+                    self.game_state, self.cards_on_board, self.deck_type, self.n_games, self.games_won = self.state_machine.get_game_info(
+                        call_game_state=False)
 
                 keyboard.send("space")
             else:
@@ -203,19 +207,46 @@ class Bot:
                 if playable_card_in_hand:
                     print("Playing card: ", playable_card_in_hand)
                     self.play_card(playable_card_in_hand)
-                    diff = playable_card_in_hand.cost
+
+                    # Grant/Pick an ally in hand
+                    if "ally in hand" in playable_card_in_hand.description_raw:
+                        sleep(1.25)
+                        self.game_state, self.cards_on_board, self.deck_type, self.n_games, self.games_won = self.state_machine.get_game_info(
+                            call_game_state=False)
+                        units_in_hand = tuple(
+                            filter(lambda card_in_hand: not card_in_hand.is_spell(), self.cards_on_board["cards_attk"]))  # NOTE: Has to be cards_attk, because they are lifted
+                        if units_in_hand:
+                            select_epehemral = "Ephemeral" in playable_card_in_hand.description_raw
+                            card_to_click = self.deck_strategy.get_card_in_hand(units_in_hand, select_epehemral)
+                            self.click(
+                                self.window_x + card_to_click.top_center[0], self.window_y + self.window_height - card_to_click.top_center[1])
+
+                    # Calculate spell mana if necessary
                     if playable_card_in_hand.is_spell():
-                        diff = max(0, playable_card_in_hand.cost - self.spell_mana)
                         self.spell_mana = max(0, self.spell_mana - playable_card_in_hand.cost)
-                    self.mana -= diff
+
+                    # Get new mana
+                    sleep(1.25)
+                    while True:
+                        self._get_mana(self.state_machine.request_frames())
+                        if self.mana != -1:
+                            break
                     self.prev_mana = self.mana
+
+                    # diff = playable_card_in_hand.cost
+                    # if playable_card_in_hand.is_spell():
+                    #     diff = max(0, playable_card_in_hand.cost - self.spell_mana)
+                    #     self.spell_mana = max(0, self.spell_mana - playable_card_in_hand.cost)
+                    # self.mana -= diff
+                    # self.prev_mana = self.mana
                 else:
                     if self.game_state == GameState.Attack_Turn:
                         keyboard.send("a")
 
                         # Sleep so API gets called again and get cards_on_board info
                         sleep(1.25)
-                        self.game_state, self.cards_on_board, self.deck_type, self.n_games, self.games_won = self.state_machine.get_game_info()
+                        self.game_state, self.cards_on_board, self.deck_type, self.n_games, self.games_won = self.state_machine.get_game_info(
+                            call_game_state=False)
                         sleep(1)
 
                     keyboard.send("space")
@@ -239,7 +270,7 @@ class Bot:
     def select_deck(self):
         vals_ai = [(0.04721, 0.33454), (0.15738, 0.33401), (0.33180, 0.30779), (0.83213, 0.89538)]
         vals_pvp = [(0.04721, 0.33454), (0.15738, 0.25), (0.33180, 0.30779), (0.83213, 0.89538)]
-        vals = vals_ai if self.is_vs_ai else vals_pvp
+        vals = vals_pvp if self.pvp else vals_ai
         for val in vals:
             v = (self.window_x + val[0] * self.window_width, self.window_y + val[1] * self.window_height)
             self.click(int(v[0]), int(v[1]))
