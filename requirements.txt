@@ -4,4 +4,3 @@ opencv_python==4.5.5.62
 Pillow==9.1.0
 pywin32==303
 termcolor==1.1.0
-win32gui==221.6
