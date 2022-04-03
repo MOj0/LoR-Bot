@@ -20,6 +20,8 @@ bot_thread.start()
 
 sleep(0.1) # Necessary if we want to call get_window_info_frames now
 
+#TODO: Smooth mouse movement!
+
 if state_machine.get_window_info_frames()[0][:2] == (-1, -1):  # Only check if x and y coords are -1
     print(colored("Legends of Runeterra isn't running!", "red"))
     exit(1)

@@ -14,7 +14,7 @@ class Pirates:
         self.mulligan_cards = ("Crackshot Corsair", "Legion Rearguard",
                                "Legion Saboteur", "Precious Pet", "Prowling Cutthroat")
         self.deck = None
-   
+
     def set_deck(self, deck):
         self.deck = deck
 
@@ -122,9 +122,15 @@ class Pirates:
 
     def playable_card(self, playable_cards, game_state, cards_on_board):
         attack_sort = sorted(playable_cards, key=lambda playable_card: playable_card.cost, reverse=True)
+        n_cards_on_board = len(cards_on_board["cards_board"])
         for playable_card_in_hand in attack_sort:
             name = playable_card_in_hand.get_name()
-            if all(card.get_name() != name for card in self.deck) or name == "Parrley" or name == "Make it Rain" and len(cards_on_board["opponent_cards_board"]) < 2:
+            n_summon = 2 if "summon a" in playable_card_in_hand.description_raw.lower() else 1
+            all_1hp_or_lower = len(cards_on_board["cards_board"]) != 0 and  all(unit.health <= 1 for unit in cards_on_board["cards_board"])
+            if name == "Imperial Demolist" and all_1hp_or_lower \
+                or n_cards_on_board + n_summon > 6 \
+                    or all(card.get_name() != name for card in self.deck) \
+            or name == "Parrley" or name == "Make it Rain" and len(cards_on_board["opponent_cards_board"]) < 2:
                 continue
             if game_state == GameState.Attack_Turn or game_state == GameState.Defend_Turn:
                 return playable_card_in_hand

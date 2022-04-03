@@ -160,7 +160,7 @@ class Bot:
             print("Confirming mulligan")
             keyboard.send("space")
 
-            sleep(5)
+            sleep(8)
         elif self.game_state == GameState.Opponent_Turn:
             sleep(3)
             return
@@ -179,6 +179,7 @@ class Bot:
                     call_game_state=False)
 
             keyboard.send("space")
+            sleep(10)
         elif self.game_state == GameState.Defend_Turn or self.game_state == GameState.Attack_Turn:
             if len(self.cards_on_board["spell_stack"]) != 0 and all(card.is_spell() for card in self.cards_on_board["spell_stack"]):
                 # Double check to avoid False Positives
