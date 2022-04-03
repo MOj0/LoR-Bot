@@ -79,21 +79,21 @@ class Ephemeral(Strategy):
             unit_in_danger = attack_card.attack == 0 or "Ephemeral" not in attack_card.keywords and any(map(
                 lambda enemy_card: enemy_card.attack >= attack_card.health + 2, cards_on_board["opponent_cards_board"]))
             if unit_in_danger and attack_card.get_name() != "Zed" and "Elusive" not in attack_card.keywords:
-                self.drag_card_from_to(attack_card.get_pos(), (attack_card.get_pos()[0], window_height - 100))
+                self.drag_card_from_to(attack_card.get_pos(), (attack_card.get_pos()[0], 100))
                 return False
 
         # If attack would overflow
         if n_attackers + n_to_be_spawned > 6 and n_non_ephemeral > 0:
             for attack_card in cards_on_board["cards_attk"]:
                 if "Ephemeral" not in attack_card.keywords and attack_card.get_name() != "Zed" and attack_card.get_name() != "Hecarim":
-                    self.drag_card_from_to(attack_card.get_pos(), (attack_card.get_pos()[0], window_height - 100))
+                    self.drag_card_from_to(attack_card.get_pos(), (attack_card.get_pos()[0], 100))
                     return False
 
         # Position Hecarim to the right for max damage output
         if any(map(lambda attk_card: attk_card.get_name() == "Hecarim", cards_on_board["cards_attk"])) and not self.hecarim_backed :  # Retreat Hecarim from attack if it is on board
             for attack_card in cards_on_board["cards_attk"]:
                 if attack_card.get_name() == "Hecarim":
-                    self.drag_card_from_to(attack_card.get_pos(), (attack_card.get_pos()[0], window_height - 100))
+                    self.drag_card_from_to(attack_card.get_pos(), (attack_card.get_pos()[0],  100))
                     self.hecarim_backed = True
                     sleep(1)
                     return False  # Not done yet

@@ -34,7 +34,7 @@ class Pirates(Strategy):
         for playable_card_in_hand in cards_sorted:
             name = playable_card_in_hand.get_name()
             n_summon = 2 if "summon a" in playable_card_in_hand.description_raw.lower() else 1
-            all_1hp_or_lower = len(cards_on_board["cards_board"]) != 0 and  all(unit.health <= 1 for unit in cards_on_board["cards_board"])
+            all_1hp_or_lower = len(cards_on_board["cards_board"]) != 0 and all(unit.health <= 1 for unit in cards_on_board["cards_board"])
             if name == "Imperial Demolist" and all_1hp_or_lower \
                 or n_cards_on_board + n_summon > 6 \
                     or all(card.get_name() != name for card in self.deck) \
@@ -52,7 +52,7 @@ class Pirates(Strategy):
         for attack_card in cards_on_board["cards_attk"]:
             # Remove Crackshot Corsair from board if necessary
             if attack_card.get_name() == "Crackshot Corsair" and len(cards_on_board["opponent_cards_board"]) != 0:
-                self.drag_card_from_to(attack_card.get_pos(), (attack_card.get_pos()[0], window_height - 100))
+                self.drag_card_from_to(attack_card.get_pos(), (attack_card.get_pos()[0], 100))
                 return False
 
         return True

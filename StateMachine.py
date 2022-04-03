@@ -9,13 +9,13 @@ from constants import GameState
 import cv2
 from enum import Enum
 from Ephemeral import Ephemeral
-from Aggro import Aggro
 from Pirates import Pirates
+from Generic import Generic
 
 class DeckType(Enum):
     Ephemeral = Ephemeral
-    Aggro = Aggro
     Pirates = Pirates
+    Generic = Generic
 
 
 class StateMachine:
@@ -192,7 +192,7 @@ class StateMachine:
             elif any(card.get_name() == "Gangplank" for card in self.deck):
                 self.deck_type = DeckType.Pirates
             else:
-                self.deck_type = DeckType.Aggro
+                self.deck_type = DeckType.Generic
     
     def get_deck(self):
         return self.deck

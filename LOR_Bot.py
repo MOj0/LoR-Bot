@@ -8,12 +8,15 @@ from APICaller import APICaller
 from Bot import Bot
 from StateMachine import StateMachine
 from StateMachine import DeckType, GameState
+import sys
 
 FONT = cv2.FONT_HERSHEY_SIMPLEX
-
 state_machine = StateMachine()
 
-bot = Bot(state_machine, pvp=True)
+isPvp = len(sys.argv) != 2 or sys.argv[-1] != "noPVP"
+print("PvP Mode" if isPvp else "Playing against AI...")
+
+bot = Bot(state_machine, pvp=isPvp)
 bot_thread = threading.Thread(target=bot.run)
 bot_thread.daemon = True
 bot_thread.start()
@@ -48,16 +51,16 @@ while True:
     board_state_img = cv2.putText(board_state_img, deck_type_str, (500, 100), FONT, 1, (255, 255, 255), 2)
     board_state_img = cv2.putText(board_state_img, game_state_str, (1000, 40), FONT, 1, (0, 255, 255), 2)
     board_state_img = cv2.putText(board_state_img, "Round {}".format(display_data["turn"]),
-                                  (1000, 80), FONT, 1, (0, 255, 255), 2)
+                                  (850, 80), FONT, 1, (0, 255, 255), 2)
     board_state_img = cv2.putText(board_state_img, "Mana {}".format(display_data["mana"]),
-                                  (1000, 120), FONT, 1, (0, 20, 255), 2)
+                                  (850, 120), FONT, 1, (0, 20, 255), 2)
     board_state_img = cv2.putText(board_state_img, "Spell mana {}".format(display_data["spell_mana"]),
-                                  (1000, 160), FONT, 1, (0, 100, 255), 2)
+                                  (850, 160), FONT, 1, (0, 100, 255), 2)
     board_state_img = cv2.putText(board_state_img, "Prev mana {}".format(display_data["prev_mana"]),
-                                  (1000, 200), FONT, 1, (0, 100, 255), 2)
+                                  (850, 200), FONT, 1, (0, 100, 255), 2)
     board_state_img=cv2.putText(board_state_img, "Win% {}/{} ({})".format(
         display_data["games_won"], display_data["n_games"], ("/" if display_data["n_games"] == 0 else str(100 * display_data["games_won"] / display_data["n_games"])) + " %"),
-        (1000, 240), FONT, 1, (0, 255, 255), 2)
+        (850, 240), FONT, 1, (0, 255, 255), 2)
 
     # WORKAROUND: tuple for display_data so it doesn't change during iteration
     for i, (position, cards) in enumerate(tuple(display_data["cards_on_board"].items())):
