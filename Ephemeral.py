@@ -1,76 +1,18 @@
 from time import sleep
-import win32api
-import win32con
 from constants import GameState
 from collections import defaultdict
+from Strategy import Strategy
 
+class Ephemeral(Strategy):
+    def __init__(self, mouse_handler):
+        super().__init__(mouse_handler)
 
-class Ephemeral:
-    def __init__(self):
-        self.graveyard = defaultdict(int)  # Counter of dead cards, (Harrowing) 
-        self.spawn_on_attack = 0  # Increments when Shark Chariot dies
-        self.block_counter = 0
         self.mulligan_cards = ("Zed", "Shark Chariot", "Shadow Fiend")
+        self.graveyard = defaultdict(int)  # Counter of dead cards used for Harrowing
+        self.spawn_on_attack = 0  # Increments when Shark Chariot dies
         self.hecarim_backed = False
 
-        self.window_x = 0
-        self.window_y = 0
-        self.window_height = 0
-
-    def click(self, pos, y=None):
-        if y is not None:
-            x = pos
-        else:
-            (x, y) = pos
-
-        (x, y) = (int(x), int(y))
-
-        win32api.SetCursorPos((x, y))
-        win32api.mouse_event(win32con.MOUSEEVENTF_LEFTDOWN, x, y, 0, 0)
-        win32api.mouse_event(win32con.MOUSEEVENTF_LEFTUP, x, y, 0, 0)
-
-    def hold(self, pos, y=None):
-        if y is not None:
-            x = pos
-        else:
-            (x, y) = pos
-        win32api.SetCursorPos((x, y))
-        sleep(0.1)
-        win32api.mouse_event(win32con.MOUSEEVENTF_LEFTDOWN, x, y, 0, 0)
-
-    def release(self, pos, y=None):
-        if y is not None:
-            x = pos
-        else:
-            (x, y) = pos
-        win32api.SetCursorPos((x, y))
-        win32api.mouse_event(win32con.MOUSEEVENTF_LEFTUP, x, y, 0, 0)
-
-    def drag_card_from_to(self, pos_src, pos_dest):
-        pos_src = (self.window_x + pos_src[0], self.window_y + self.window_height - pos_src[1])
-        pos_dest = (self.window_x + pos_dest[0], self.window_y + self.window_height - pos_dest[1])
-        self.hold(pos_src)
-        sleep(0.3)
-        win32api.SetCursorPos(((pos_src[0] + pos_dest[0]) // 2, (pos_src[1] + pos_dest[1]) // 2))
-        sleep(1)
-        self.release(pos_dest)
-        sleep(0.5)
-
-    def mulligan(self, cards, window_x, window_y, window_height):
-        # Window stuff
-        self.window_x = window_x
-        self.window_y = window_y
-        self.window_height = window_height
-        
-        for in_game_card_obj in cards:
-            if in_game_card_obj.get_name() not in self.mulligan_cards:
-                cx = window_x + in_game_card_obj.top_center[0]
-                cy = window_y + window_height - in_game_card_obj.top_center[1]
-                self.click(cx, cy)
-                sleep(0.5)
-
     def block(self, cards_on_board, window_x, window_y, window_height):
-        # Window stuff
         self.window_x = window_x
         self.window_y = window_y
         self.window_height = window_height
@@ -115,8 +57,7 @@ class Ephemeral:
                 return playable_card_in_hand
         return None
 
-    def attack(self, cards_on_board, window_x, window_y, window_height):
-        # Window stuff
+    def reorganize_attack(self, cards_on_board, window_x, window_y, window_height):
         self.window_x = window_x
         self.window_y = window_y
         self.window_height = window_height
@@ -174,5 +115,5 @@ class Ephemeral:
         if select_ephemeral:
             ephemerals = filter(lambda card_in_hand: "Ephemeral" in card_in_hand.keywords, units_in_hand)
             return next(ephemerals, units_in_hand[0])
-        # select_ephemeral == False -> select the strongest
+        # Select the strongest
         return max(units_in_hand, key=lambda card_in_hand: card_in_hand.attack + card_in_hand.health)

@@ -147,8 +147,7 @@ class StateMachine:
         # Mulligan check
         local_cards = tuple(filter(lambda card: card["CardCode"] !=
                                    "face" and card["LocalPlayer"], self.game_data["Rectangles"]))
-        # TODO: Generalize the 730 y value
-        if local_cards and sum(1 for _ in filter(lambda card: card["TopLeftY"] == 730, local_cards)) == len(local_cards):
+        if local_cards and sum(1 for _ in filter(lambda card: abs(card["TopLeftY"] - self.window_height * 0.6759) < 0.05, local_cards)) == len(local_cards):
             return GameState.Mulligan
 
         if len(self.cards_on_board["opponent_cards_attk"]):

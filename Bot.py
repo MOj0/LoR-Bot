@@ -1,12 +1,11 @@
 import cv2
 import constants
 import numpy as np
-import win32api
-import win32con
 import keyboard
 from time import sleep
 from StateMachine import DeckType
 from constants import GameState
+from MouseHandler import MouseHandler
 
 MANA_MASKS = (constants.ZERO, constants.ONE, constants.TWO, constants.THREE, constants.FOUR,
               constants.FIVE, constants.SIX, constants.SEVEN, constants.EIGHT, constants.NINE, constants.TEN)
@@ -39,6 +38,7 @@ class Bot:
         self.n_games = 0
         self.first_pass_blocking = False
         self.first_pass_spell = False
+        self.mouse_handler = MouseHandler()
 
     def _get_mana(self, frames):
         # Magic
@@ -47,41 +47,13 @@ class Bot:
 
         self.mana = mana_vals[0] if mana_vals else -1
 
-    def click(self, pos, y=None):
-        if y is not None:
-            x = pos
-        else:
-            (x, y) = pos
-
-        (x, y) = (int(x), int(y))
-
-        win32api.SetCursorPos((x, y))
-        win32api.mouse_event(win32con.MOUSEEVENTF_LEFTDOWN, x, y, 0, 0)
-        win32api.mouse_event(win32con.MOUSEEVENTF_LEFTUP, x, y, 0, 0)
-
-    def hold(self, pos, y=None):
-        if y is not None:
-            x = pos
-        else:
-            (x, y) = pos
-        win32api.SetCursorPos((x, y))
-        sleep(0.1)
-        win32api.mouse_event(win32con.MOUSEEVENTF_LEFTDOWN, x, y, 0, 0)
-
-    def release(self, pos, y=None):
-        if y is not None:
-            x = pos
-        else:
-            (x, y) = pos
-        win32api.SetCursorPos((x, y))
-        win32api.mouse_event(win32con.MOUSEEVENTF_LEFTUP, x, y, 0, 0)
-
     def run(self):
         while True:
             self.game_state, self.cards_on_board, self.deck_type, self.n_games, self.games_won = self.state_machine.get_game_info()
 
             if isinstance(self.deck_type, DeckType) and self.deck_strategy is None:
-                self.deck_strategy = self.deck_type.value()  # Create a new DeckStrategy object from DeckType
+                # Create a new DeckStrategy object from DeckType
+                self.deck_strategy = self.deck_type.value(self.mouse_handler)
                 if self.deck_strategy.deck is None and self.deck_type == DeckType.Pirates:
                     self.deck_strategy.set_deck(tuple(self.state_machine.get_deck()))
 
@@ -110,13 +82,14 @@ class Bot:
                 continue
             self.play()
 
-            win32api.SetCursorPos((self.window_x, self.window_y))
+            self.mouse_handler.move_mouse_smooth(self.window_x + self.window_width /
+                                                 2, self.window_y + self.window_height/2)
 
     def continue_and_replay(self):
         sleep(4)
         continue_btn_pos = (self.window_x + 0.66 * self.window_width, self.window_y + self.window_height * 0.90)
         for _ in range(16):
-            self.click(continue_btn_pos)
+            self.mouse_handler.click(continue_btn_pos)
             sleep(1.5)
         sleep(1)
 
@@ -201,14 +174,15 @@ class Bot:
                 self.game_state, self.cards_on_board, self.deck_type, self.n_games, self.games_won = self.state_machine.get_game_info(
                     call_game_state=False)
 
-                while not self.deck_strategy.attack(self.cards_on_board, self.window_x, self.window_y, self.window_height):
+                while not self.deck_strategy.reorganize_attack(self.cards_on_board, self.window_x, self.window_y, self.window_height):
                     sleep(1.25)
                     self.game_state, self.cards_on_board, self.deck_type, self.n_games, self.games_won = self.state_machine.get_game_info(
                         call_game_state=False)
 
                 keyboard.send("space")
             else:
-                playable_card_in_hand = self.deck_strategy.playable_card(playable_cards, self.game_state, self.cards_on_board)
+                playable_card_in_hand = self.deck_strategy.playable_card(
+                    playable_cards, self.game_state, self.cards_on_board)
                 if playable_card_in_hand:
                     print("Playing card: ", playable_card_in_hand)
                     self.play_card(playable_card_in_hand)
@@ -223,13 +197,13 @@ class Bot:
                         if units_in_hand:
                             select_epehemral = "Ephemeral" in playable_card_in_hand.description_raw
                             card_to_click = self.deck_strategy.get_card_in_hand(units_in_hand, select_epehemral)
-                            self.click(
+                            self.mouse_handler.click(
                                 self.window_x + card_to_click.top_center[0], self.window_y + self.window_height - card_to_click.top_center[1])
                     # Imperial Demolist play effect
                     elif "to an ally" in playable_card_in_hand.description_raw and len(self.cards_on_board["cards_board"]) != 0:
                         for card_to_click in self.cards_on_board["cards_board"]:
                             if card_to_click.health > 1:
-                                self.click(
+                                self.mouse_handler.click(
                                     self.window_x + card_to_click.top_center[0], self.window_y + self.window_height - card_to_click.top_center[1])
                                 sleep(0.5)
                                 break
@@ -237,7 +211,8 @@ class Bot:
                             keyboard.send("space")
                     elif playable_card_in_hand.get_name() == "Petty Officer":
                         sleep(0.75)
-                        self.click(self.window_x + 4 * self.window_width // 7, self.window_y + self.window_height // 2)
+                        self.mouse_handler.click(self.window_x + 4 * self.window_width //
+                                                 7, self.window_y + self.window_height // 2)
                         sleep(1)
 
                     if "Attune" in playable_card_in_hand.keywords:
@@ -269,14 +244,12 @@ class Bot:
 
     def play_card(self, card):
         (x, y) = (self.window_x + card.top_center[0], self.window_y + self.window_height - card.top_center[1])
-        self.click(x, y)
+        self.mouse_handler.move_mouse_smooth(x, y)
         sleep(0.5)  # Wait for the card maximize animation
-        self.hold(x, y)
-        for i in range(3):
-            sleep(0.5)
-            win32api.SetCursorPos((x, int(y - self.window_height / 7 * i)))
+        self.mouse_handler.hold(x, y)
+        self.mouse_handler.move_mouse_smooth(x, int(y - 3 * self.window_height / 7))
         sleep(0.3)
-        self.release(x, int(y - 3 * self.window_height / 7))
+        self.mouse_handler.release(x, int(y - 3 * self.window_height / 7))
         sleep(0.3)
         if card.is_spell():
             sleep(1)
@@ -288,7 +261,7 @@ class Bot:
         vals = vals_pvp if self.pvp else vals_ai
         for val in vals:
             v = (self.window_x + val[0] * self.window_width, self.window_y + val[1] * self.window_height)
-            self.click(int(v[0]), int(v[1]))
+            self.mouse_handler.click(int(v[0]), int(v[1]))
             sleep(0.7)
 
     def get_display_data(self) -> dict:
