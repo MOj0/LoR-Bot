@@ -1,6 +1,6 @@
 keyboard==0.13.5
 numpy==1.22.2
 opencv_python==4.5.5.62
-Pillow==9.1.0
+Pillow==9.1.1
 pywin32==303
 termcolor==1.1.0
