@@ -12,7 +12,6 @@ import sys
 from download_card_sets import download_missing_card_sets, is_card_set_missing
 
 FONT = cv2.FONT_HERSHEY_SIMPLEX
-state_machine = StateMachine()
 
 if is_card_set_missing():
     background_info = np.full((*(720, 1280), 3), (0.0, 0.0, 0.0))
@@ -28,6 +27,8 @@ if is_card_set_missing():
 
 isPvp = len(sys.argv) != 2 or sys.argv[-1] != "noPVP"
 print("PvP Mode" if isPvp else "Playing against AI...")
+
+state_machine = StateMachine()
 
 bot = Bot(state_machine, pvp=isPvp)
 bot_thread = threading.Thread(target=bot.run)

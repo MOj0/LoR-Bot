@@ -1,16 +1,18 @@
-from Card import InGameCard
+from Card import InGameCard, Card
 from collections import defaultdict
 import win32gui
 import keyboard
 from PIL import ImageGrab
 import numpy as np
-import constants
 from constants import GameState
 import cv2
 from enum import Enum
 from Ephemeral import Ephemeral
 from Pirates import Pirates
 from Generic import Generic
+import os
+import json
+
 
 class DeckType(Enum):
     Ephemeral = Ephemeral
@@ -42,6 +44,17 @@ class StateMachine:
         self.prev_game_id = -2
         self.attack_token_bounds = ((0.78, 0.6), (0.935, 0.8))
         self.turn_btn_pos = (0.86356, 0.54873)
+        self.all_cards = self._parse_all_cards()
+
+    # Parse all cards from all sets
+    def _parse_all_cards(self):
+        (_, _, card_set_files) = next(os.walk("card_sets"))
+        cards_data = []
+        for card_set in card_set_files:
+            cards_data += json.load(open("card_sets/"+card_set, encoding="utf8"))
+
+        return {card["cardCode"]: Card(card["name"], card["cost"], card["attack"],
+                                       card["health"], card["type"], card["keywords"], card["descriptionRaw"]) for card in cards_data}
 
     def _update_window_info(self, handle, window_info):
         if win32gui.GetWindowText(handle) == "Legends of Runeterra":
@@ -100,7 +113,7 @@ class StateMachine:
             if card_code == "face":
                 continue
 
-            c = constants.ALL_CARDS[card_code]
+            c = self.all_cards[card_code]
             x = in_game_card["TopLeftX"]
             y = in_game_card["TopLeftY"]
             w = in_game_card["Width"]
@@ -185,15 +198,15 @@ class StateMachine:
 
     def _get_deck_type(self):
         if self.cards_data and self.cards_data["CardsInDeck"]:
-            self.deck = tuple(constants.ALL_CARDS[cardCode] for cardCode, num_cards in self.cards_data["CardsInDeck"].items()
-                    for _ in range(num_cards))
+            self.deck = tuple(self.all_cards[cardCode] for cardCode, num_cards in self.cards_data["CardsInDeck"].items()
+                              for _ in range(num_cards))
             if any("Ephemeral" in card.keywords for card in self.deck):
                 self.deck_type = DeckType.Ephemeral
             elif any(card.get_name() == "Gangplank" for card in self.deck):
                 self.deck_type = DeckType.Pirates
             else:
                 self.deck_type = DeckType.Generic
-    
+
     def get_deck(self):
         return self.deck
 
