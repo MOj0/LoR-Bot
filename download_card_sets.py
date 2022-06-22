@@ -22,7 +22,7 @@ def download_missing_card_sets():
     (_, _, card_set_files) = next(os.walk("card_sets"))
     curr_sets_nums = tuple(map(lambda card_set: int(card_set[3]), card_set_files))
     n_sets = len(card_set_files)
-    for s in range(1, max(curr_sets_nums)):
+    for s in range(1, max(curr_sets_nums) if curr_sets_nums else 1):
         if s not in curr_sets_nums:
             n_sets += download_card_set(s)
 
