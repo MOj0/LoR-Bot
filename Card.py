@@ -17,6 +17,9 @@ class Card:
     def is_spell(self) -> bool:
         return self.type == "Spell"
 
+    def is_ability(self) -> bool:
+        return self.type == "Ability"
+
 
 class InGameCard(Card):
     def __init__(self, card, x, y, w, h, is_local):

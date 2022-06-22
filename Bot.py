@@ -154,7 +154,7 @@ class Bot:
             keyboard.send("space")
             sleep(10)
         elif self.game_state == GameState.Defend_Turn or self.game_state == GameState.Attack_Turn:
-            if len(self.cards_on_board["spell_stack"]) != 0 and all(card.is_spell() for card in self.cards_on_board["spell_stack"]):
+            if len(self.cards_on_board["spell_stack"]) != 0 and all((card.is_spell() or card.is_ability()) for card in self.cards_on_board["spell_stack"]):
                 # Double check to avoid False Positives
                 if not self.first_pass_spell:
                     self.first_pass_spell = True
