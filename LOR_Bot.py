@@ -25,7 +25,7 @@ if is_card_set_missing():
     download_missing_card_sets()
     cv2.destroyAllWindows()
 
-isPvp = len(sys.argv) != 2 or sys.argv[-1] != "noPVP"
+isPvp = len(sys.argv) != 2 or sys.argv[-1].lower() != "nopvp"
 print("PvP Mode" if isPvp else "Playing against AI...")
 
 state_machine = StateMachine()

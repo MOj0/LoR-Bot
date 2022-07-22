@@ -6,6 +6,8 @@ import shutil
 
 
 def is_card_set_missing():
+    if not os.path.isdir("card_sets"):  # Card sets are missing
+        return True
     (_, _, card_set_files) = next(os.walk("card_sets"))
     n_sets = len(card_set_files)
     curr_sets_nums = tuple(map(lambda card_set: int(card_set[3]), card_set_files))
@@ -19,6 +21,8 @@ def is_card_set_missing():
 
 
 def download_missing_card_sets():
+    if not os.path.isdir("card_sets"):  # Entire folder is missing -> create one
+        os.mkdir("card_sets")
     (_, _, card_set_files) = next(os.walk("card_sets"))
     curr_sets_nums = tuple(map(lambda card_set: int(card_set[3]), card_set_files))
     n_sets = len(card_set_files)
