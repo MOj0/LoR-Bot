@@ -264,6 +264,11 @@ class Bot:
             self.mouse_handler.click(int(v[0]), int(v[1]))
             sleep(0.7)
 
+        sleep(1)
+        # Handle "Matchmaking has failed" error
+        ok_button_pos = (self.window_x + 0.5 * self.window_width, self.window_y + 0.546 * self.window_height)
+        self.mouse_handler.click(int(ok_button_pos[0]), int(ok_button_pos[1]))
+
     def get_display_data(self) -> dict:
         return {"game_state": self.game_state, "cards_on_board": self.cards_on_board, "deck_type": self.deck_type, "mana": self.mana,
                 "spell_mana": self.spell_mana, "prev_mana": self.prev_mana, "games_won": self.games_won,
