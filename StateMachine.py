@@ -113,6 +113,9 @@ class StateMachine:
             if card_code == "face":
                 continue
 
+            if card_code not in self.all_cards:
+                print("Warning: card with key:", card_code, "not found.")
+                continue
             c = self.all_cards[card_code]
             x = in_game_card["TopLeftX"]
             y = in_game_card["TopLeftY"]

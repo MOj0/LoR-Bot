@@ -15,6 +15,8 @@ A bot for the game [Legends of Runeterra](https://playruneterra.com/en-us/) writ
 
 # Notes
 
+In case you get a `Warning: card with key: [card_key] not found.` you can delete the `card_sets` folder and restart the program. In case it still does not work, it might be because Riot decided not to make all cards publicly available (I am guessing some special skills), and there is nothing I can do about it. Altough bot won't recognize all cards in that case, it should still play just fine.
+
 This bot is very limited in terms of funcionality:
 
 - Every information about a card (apart from its position) is **static**, which means it **does not consider unit's change in stats** (attack, health, mana, additional keywords ...)
