@@ -145,11 +145,13 @@ class Bot:
                 sleep(5)
                 return
 
-            # Block one by one
-            while self.deck_strategy.block(self.cards_on_board, self.window_x, self.window_y, self.window_height):
+            block_counter = 0
+            while block_counter < 12 and self.deck_strategy.block(self.cards_on_board, self.window_x, self.window_y, self.window_height):
                 sleep(2)
                 self.game_state, self.cards_on_board, self.deck_type, self.n_games, self.games_won = self.state_machine.get_game_info(
                     call_game_state=False)
+
+                block_counter += 1
 
             keyboard.send("space")
             sleep(10)
