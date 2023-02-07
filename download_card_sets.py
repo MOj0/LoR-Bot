@@ -14,7 +14,7 @@ def is_card_set_missing():
     if any(s not in curr_sets_nums for s in range(1, n_sets + 1)):
         return True
 
-    next_set = "set" + str(n_sets + 1) + "-en_us"
+    next_set = "set" + str(n_sets + 1) + "-lite-en_us"
     zip_file_url = "https://dd.b.pvp.net/latest/" + next_set + ".zip"
     r = requests.get(zip_file_url, stream=True)
     return r.ok
@@ -37,7 +37,9 @@ def download_missing_card_sets():
 
 def download_card_set(set_number):
     next_set = "set" + str(set_number) + "-en_us"
-    zip_file_url = "https://dd.b.pvp.net/latest/" + next_set + ".zip"
+    next_set_lite = "set" + str(set_number) + "-lite-en_us"
+
+    zip_file_url = "https://dd.b.pvp.net/latest/" + next_set_lite + ".zip"
     r = requests.get(zip_file_url, stream=True)
     if not r.ok:  # File does not exist -> done
         return False
