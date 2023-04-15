@@ -97,7 +97,7 @@ class Bot:
         if self.game_state == GameState.Hold:
             return False
         if self.game_state == GameState.Menus:
-            print("SELECTING DECK NOW!")
+            print("Selecting deck")
             self.select_deck()
             sleep(5)
             return False
