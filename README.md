@@ -13,6 +13,8 @@ A bot for the game [Legends of Runeterra](https://playruneterra.com/en-us/) writ
 - Game running fullscreen at **1920x1080** resolution and at least **medium** quality, with display scaling set to 100% (otherwise the image detection procedure cannot read the mana values)
 - In-game third party endpoints enabled on port 21337 (should be on by default)
 
+If you encounter a problem where the script keeps reporting "Unknown mana", take a look at [this issue](https://github.com/MOj0/LoR-Bot/issues/22).
+
 # Notes
 
 In case you get a `Warning: card with key: [card_key] not found.` you can delete the `card_sets` folder and restart the program. In case it still does not work, it might be because Riot decided not to make all cards publicly available (I am guessing some special skills), and there is nothing I can do about it. Altough bot won't recognize all cards in that case, it should still play just fine.
