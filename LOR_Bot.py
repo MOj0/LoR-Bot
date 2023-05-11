@@ -9,21 +9,21 @@ from Bot import Bot
 from StateMachine import StateMachine
 from StateMachine import DeckType, GameState
 import sys
-from download_card_sets import download_missing_card_sets, is_card_set_missing
+from download_card_sets import download_missing_card_sets, delete_card_sets
 
 FONT = cv2.FONT_HERSHEY_SIMPLEX
 
-if is_card_set_missing():
-    background_info = np.full((*(720, 1280), 3), (0.0, 0.0, 0.0))
-    download_str1 = "Downloading missing card sets..."
-    download_str2 = "This might take a while and the application might seem unresponsive"
-    background_info = cv2.putText(background_info, download_str1, (250, 100), FONT, 1, (255, 255, 255), 2)
-    background_info = cv2.putText(background_info, download_str2, (100, 200), FONT, 1, (255, 255, 255), 2)
-    cv2.imshow('Downloading card sets...', background_info)
-    cv2.waitKey(1)
+background_info = np.full((*(720, 1280), 3), (0.0, 0.0, 0.0))
+download_str1 = "Downloading missing card sets..."
+download_str2 = "This might take a while and the application might seem unresponsive"
+background_info = cv2.putText(background_info, download_str1, (250, 100), FONT, 1, (255, 255, 255), 2)
+background_info = cv2.putText(background_info, download_str2, (100, 200), FONT, 1, (255, 255, 255), 2)
+cv2.imshow('Downloading card sets...', background_info)
+cv2.waitKey(1)
 
-    download_missing_card_sets()
-    cv2.destroyAllWindows()
+delete_card_sets()
+download_missing_card_sets()
+cv2.destroyAllWindows()
 
 isPvp = len(sys.argv) != 2 or sys.argv[-1].lower() != "nopvp"
 print("PvP Mode" if isPvp else "Playing against AI...")
