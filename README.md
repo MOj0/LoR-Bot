@@ -17,28 +17,34 @@ If you encounter a problem where the script keeps reporting "Unknown mana", take
 
 # Notes
 
-In case you get a `Warning: card with key: [card_key] not found.` you can delete the `card_sets` folder and restart the program. In case it still does not work, it might be because Riot decided not to make all cards publicly available (I am guessing some special skills), and there is nothing I can do about it. Altough bot won't recognize all cards in that case, it should still play just fine.
+In case you get a `Warning: card with key: [card_key] not found.` you can delete the `card_sets` folder and restart the program. In case it still does not work, it might be because Riot decided not to make all cards publicly available (I am guessing some special skills), and there is nothing I can do about it. Although bot won't recognize all cards in that case, it should still play just fine.
 
-This bot is very limited in terms of funcionality:
+This bot is very limited in terms of functionality:
 
 - Every information about a card (apart from its position) is **static**, which means it **does not consider unit's change in stats** (attack, health, mana, additional keywords ...)
 - **It does not know how to do targeting at all** (apart from few exceptions: Imperial Demolitionist, Oblivious Islander)
 
-# Viable decks
+# Decks
 
-Considering those limitations, there are only a few decks which are viable / suited for this bot. Here are the tested, recommended decks:
+There are 2 variations of a Bilgewater/Noxus aggro deck, which managed to reach **Masters**.
+[Screenshots here](https://github.com/MOj0/LoR-Bot/issues/21#issuecomment-1583795146).
+
+- **Master (79): CICACBIGAEBAEAYEAUBQEBQWFU6AMAIDAIGA6JJGFABACAIDDYAQEBQIAA**
+- **Master (35): CICACAQDAQAQKBQBAUAQGAQMEUTCQBICAYEBMJRNHQAQEAIDA4NAA**
+
+Here are also some of my decks:
 
 - **Ephemeral: CEBQCBACBYBQCAQJBUNQSAIFAMCAOCQMCULSMKQAAEAQCBJB**
 - **Pirates: CICACAQDAQAQKBQBAUAQGAQMB4SSQBICAYLCAJRNHQAQEAQGBAGQA**
 - **Mistwraiths: CEBQCBAFGYBQGBIDAYGQQAIFAMHBAHRBE42TQAQBAEBTGAIBAU3QA**
 
-Note that this bot has built-in strategies (play styles) for Ephemeral and Pirate decks, which are determined automatically. If the deck isn't recognized, it will switch to **generic** playstyle which **might not work as you would expect**.
+Note that this bot has built-in strategies (play styles) for Ephemeral and Pirate decks, which are determined automatically. If the deck isn't recognized, it will switch to **generic** play style.
 
 # How to run
 
 Run the game the way it is specified in the Prerequisites section and run the following command in the project directory: `python LOR_Bot.py` or simply use your IDE to run that file. If you want to test the bot against the in-game AI, you can run: `python LOR_Bot.py noPVP`
 
-A new window should open containg various information about the current state of the game.
+A new window should open containing various information about the current state of the game.
 
 Bot will then navigate through menus and **always select the first deck in your collection** and select the play button. You can favorite the deck you want to use, or prepend the deck's name with a '.' (that way it will appear first on the list).
 
