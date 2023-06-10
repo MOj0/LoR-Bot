@@ -10,7 +10,7 @@ A bot for the game [Legends of Runeterra](https://playruneterra.com/en-us/) writ
 
 - Python 3 (tested on `Python 3.10.2`)
 - All libraries in `requirements.txt` installed (run `pip install -r requirements.txt`)
-- Game running fullscreen at **1920x1080** resolution and at least **medium** quality, with display scaling set to 100% (otherwise the image detection procedure cannot read the mana values)
+- Game running full-screen at **1920x1080** resolution and at least **medium** quality, with display scaling set to 100% (otherwise the image detection procedure cannot read the mana values)
 - In-game third party endpoints enabled on port 21337 (should be on by default)
 
 If you encounter a problem where the script keeps reporting "Unknown mana", take a look at [this issue](https://github.com/MOj0/LoR-Bot/issues/22).
