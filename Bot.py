@@ -89,10 +89,10 @@ class Bot:
         sleep(4)
         continue_btn_pos = (self.window_x + 0.66 * self.window_width, self.window_y + self.window_height * 0.90)
         second_continue_btn_pos = (self.window_x + 0.73854 * self.window_width, self.window_y + self.window_height * 0.92222)
-        for _ in range(16):
-            self.mouse_handler.click(continue_btn_pos)
-            self.mouse_handler.click(second_continue_btn_pos)
-            sleep(1.5)
+        self.mouse_handler.click(continue_btn_pos)
+        self.mouse_handler.click(continue_btn_pos)
+        sleep(1.5)
+        self.mouse_handler.click(second_continue_btn_pos)
         sleep(1)
 
     def is_state_playable(self) -> bool:
