@@ -3,5 +3,5 @@ numpy==1.22.2
 opencv_python==4.5.5.62
 Pillow==10.2.0
 pywin32==303
-requests==2.31.0
+requests==2.32.2
 termcolor==1.1.0
